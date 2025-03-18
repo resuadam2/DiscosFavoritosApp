@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">ListaDiscosExamen</string>
+    <string name="back_button">Back</string>
+    <string name="disco_entry_title">Nuevo Disco</string>
+    <string name="average_rating">"Valoración media: %1$s"</string>
+    <string name="delete_button">Borrar</string>
+</resources>
