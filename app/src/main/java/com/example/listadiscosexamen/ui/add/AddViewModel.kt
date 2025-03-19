@@ -1,6 +1,9 @@
 package com.example.listadiscosexamen.ui.add
 
 import android.database.sqlite.SQLiteConstraintException
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.core.text.isDigitsOnly
 import androidx.lifecycle.ViewModel
 import com.example.listadiscosexamen.data.Disco
@@ -8,18 +11,18 @@ import com.example.listadiscosexamen.data.DiscoRepository
 
 data class AddUiState(
     val discoDetails: DiscoDetails = DiscoDetails(),
-    val isSaveButtonClicked: Boolean = false
+    val isSaveButtonEnabled: Boolean = false
 )
 
 class AddViewModel(
     private val discoRepository: DiscoRepository,
 ) : ViewModel() {
-    var addUiState = AddUiState()
+    var addUiState by mutableStateOf(AddUiState())
         private set
 
     fun updateUiState(discoDetails: DiscoDetails) {
         addUiState = addUiState.copy(discoDetails = discoDetails,
-            isSaveButtonClicked = validateInput(discoDetails))
+            isSaveButtonEnabled = validateInput(discoDetails))
     }
 
     suspend fun saveDisco() : Boolean {
