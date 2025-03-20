@@ -1,17 +1,26 @@
 package com.example.listadiscosexamen.ui.home
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.twotone.Star
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -19,6 +28,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -27,7 +37,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.EmojiSupportMatch
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.listadiscosexamen.ListaDiscosTopAppBar
 import com.example.listadiscosexamen.ui.AppViewModelProvider
@@ -62,12 +75,21 @@ fun HomeScreen(
         },
         bottomBar = {
             BottomAppBar(
-
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
-                if (state.discoList.isEmpty()) {
-                    Text(stringResource(R.string.no_discos))
-                } else {
-                    Text(stringResource(R.string.average_rating,state.valoracionMedia.toString()))
+                Row (
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ){
+                    if (state.discoList.isEmpty()) {
+                        Text(stringResource(R.string.no_discos))
+                    } else {
+                        Text(
+                            stringResource(R.string.average_rating,state.valoracionMedia.toString()),
+                            style = MaterialTheme.typography.titleLarge,)
+                    }
                 }
             }
         },
@@ -86,9 +108,21 @@ fun HomeScreen(
         HomeBody(
             discos = state.discoList,
             onNavigateToDetail = onNavigateToDetail,
-            onDeleteDisco = viewModel::deleteDisco,
+            insertarDiscosDePrueba = viewModel::insertarDiscosDePrueba,
+            onShowOrHideDeleteDialog = viewModel::onShowOrHideDeleteDialog,
             modifier = Modifier.padding(innerPadding)
         )
+        if (state.showDeleteDialog) {
+            DeleteConfirmationDialog(
+                title = state.discoToDelete?.titulo ?: "",
+                onDeleteConfirm = {
+                    viewModel.deleteDisco(state.discoToDelete!!)
+                },
+                onDismiss = {
+                    viewModel.onShowOrHideDeleteDialog(false, state.discoToDelete!!)
+                }
+            )
+        }
     }
 }
 
@@ -96,14 +130,44 @@ fun HomeScreen(
 fun HomeBody(
     discos: List<Disco>,
     modifier: Modifier,
+    insertarDiscosDePrueba: () -> Unit = {},
     onNavigateToDetail: (Int) -> Unit,
-    onDeleteDisco: (Disco) -> Unit
+    onShowOrHideDeleteDialog: (Boolean, Disco) -> Unit
 ) {
-    LazyColumn(
-        modifier = modifier
-    ) {
-        items(discos) { 
-            DiscoListItem(disco = it, onNavigateToDetail = onNavigateToDetail, onDeleteDisco = onDeleteDisco)
+    if (discos.isEmpty()){
+        Column (
+            modifier = modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = stringResource(R.string.no_discos),
+                style = MaterialTheme.typography.titleLarge
+            )
+            Icon(
+                imageVector = Icons.Default.Clear,
+                contentDescription = stringResource(R.string.disco_entry_title),
+                modifier = Modifier.padding(16.dp).size(64.dp)
+            )
+            Button(
+                onClick = insertarDiscosDePrueba,
+            ) {
+                Text(stringResource(R.string.insert_test_discos))
+            }
+        }
+    } else {
+        LazyColumn(
+            modifier = modifier
+        ) {
+            items(discos) {
+                DiscoListItem(
+                    disco = it,
+                    onNavigateToDetail = onNavigateToDetail,
+                    onShowOrHideDeleteDialog = onShowOrHideDeleteDialog
+                )
+            }
         }
     }
 }
@@ -112,87 +176,79 @@ fun HomeBody(
 fun DiscoListItem(
     disco: Disco,
     onNavigateToDetail: (Int) -> Unit,
-    onDeleteDisco: (Disco) -> Unit
+    onShowOrHideDeleteDialog: (Boolean, Disco) -> Unit
 ) {
     Row (
-        modifier = Modifier.fillMaxWidth().clickable(
+        modifier = Modifier
+            .padding(8.dp)
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.inversePrimary)
+            .padding(8.dp)
+            .clickable(
             onClick = { onNavigateToDetail(disco.id) }
         ),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceEvenly
+        horizontalArrangement = Arrangement.SpaceBetween
     ){
         Column (
+            modifier = Modifier.weight(0.4f),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.Start
         ) {
-            Text(disco.titulo)
-            Text(disco.autor)
+            Text(text = disco.titulo,
+                style = MaterialTheme.typography.titleMedium)
+            Text(text = disco.autor,
+                style = MaterialTheme.typography.titleSmall)
         }
         Row (
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
             for (i in 1..5) {
-                if (i <= disco.valoracion) {
-                    Text("★")
-                } else {
-                    Text("☆")
-                }
+                Icon(
+                    imageVector = if (i <= disco.valoracion) Icons.Filled.Star else Icons.TwoTone.Star,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
             }
         }
 
         IconButton(
-            onClick = { onDeleteDisco(disco) }
+            onClick = {
+                onShowOrHideDeleteDialog(true, disco)
+            }
         ) {
             Icon(
                 imageVector = Icons.Default.Delete,
-                contentDescription = stringResource(R.string.delete_button)
+                contentDescription = stringResource(R.string.delete_button),
+                tint = MaterialTheme.colorScheme.primary
             )
         }
     }
 }
 
-@Preview
 @Composable
-fun DiscoListItemPreview() {
-    DiscoListItem(
-        disco = Disco(
-            titulo = "Titulo",
-            autor = "Autor",
-            valoracion = 3,
-            id = TODO(),
-            numCanciones = TODO(),
-            publicacion = TODO()
-        ),
-        onNavigateToDetail = {},
-        onDeleteDisco = {}
-    )
-}
-
-@Preview
-@Composable
-fun HomeBodyPreview() {
-    HomeBody(
-        discos = listOf(
-            Disco(
-                titulo = "Titulo",
-                autor = "Autor",
-                valoracion = 3,
-                id = TODO(),
-                numCanciones = TODO(),
-                publicacion = TODO()
-            ),
-            Disco(
-                titulo = "Titulo",
-                autor = "Autor",
-                valoracion = 3,
-                id = TODO(),
-                numCanciones = TODO(),
-                publicacion = TODO()
-            )
-        ),
-        onNavigateToDetail = {},
-        onDeleteDisco = {},
-        modifier = Modifier
+fun DeleteConfirmationDialog(
+    title: String,
+    onDeleteConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.delete_dialog_title)) },
+        text = { Text(stringResource(R.string.delete_dialog_message, title)) },
+        confirmButton = {
+            TextButton(onClick = {
+                onDeleteConfirm()
+                onDismiss()
+            }) {
+                Text(stringResource(R.string.delete_dialog_confirm_button))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.delete_dialog_dismiss_button))
+            }
+        }
     )
 }

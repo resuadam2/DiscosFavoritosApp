@@ -13,7 +13,7 @@ interface DiscoDao {
     fun getAll(): Flow<List<Disco>>
 
     @Query("SELECT * FROM disco WHERE id = :id")
-    fun get(id: Int): Flow<Disco>
+    fun getDisco(id: Int): Flow<Disco>
 
     @Insert
     suspend fun insert(disco: Disco)

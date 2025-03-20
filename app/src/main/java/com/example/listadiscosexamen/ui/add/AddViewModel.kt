@@ -53,7 +53,7 @@ data class DiscoDetails(
     val autor: String = "",
     val numCanciones: String = "",
     val publicacion: String = "",
-    var valoracion: String = "0",
+    var valoracion: String = "1",
 )
 
 fun Disco.toDiscoDetails(): DiscoDetails {

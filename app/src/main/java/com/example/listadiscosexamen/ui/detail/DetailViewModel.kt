@@ -1,5 +1,6 @@
 package com.example.listadiscosexamen.ui.detail
 
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -9,40 +10,48 @@ import androidx.lifecycle.viewModelScope
 import com.example.listadiscosexamen.data.DiscoRepository
 import com.example.listadiscosexamen.ui.add.DiscoDetails
 import com.example.listadiscosexamen.ui.add.toDiscoDetails
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-
-data class DetailUiScren (
-    val discoDetails: DiscoDetails = DiscoDetails(),
-    val errorLoading: Boolean = false
-)
+import java.io.IOException
 
 class DetailViewModel(
-    savedStateHundle: SavedStateHandle,
+    savedStateHandle: SavedStateHandle,
     private val discoRepository: DiscoRepository
 ) : ViewModel() {
-    var detailUiScren by mutableStateOf(DetailUiScren())
+
+    companion object {
+        private const val DETAIL_ID = "detailId"
+    }
+
+    var discoDetailUiState by mutableStateOf(DetailUiState())
         private set
 
+    private val discoId: Int = checkNotNull(savedStateHandle[DetailDestination.detailIdArg])
+
     init {
-        val discoId = savedStateHundle.get<Int>("discoId") ?: -1
-        if (discoId == -1) {
-            detailUiScren = detailUiScren.copy(errorLoading = true)
-        } else {
-            val disco = discoRepository.get(discoId).filterNotNull().map {
-                it.toDiscoDetails()
-            }
-            viewModelScope.launch {
-                disco.collect {
-                    updateUiState(it)
-                }
+        Log.d("DetailViewModel", "discoId: $discoId")
+        val discoDetails = discoRepository.getDisco(discoId).filterNotNull().map {
+            it.toDiscoDetails()
+        }
+        viewModelScope.launch {
+            discoDetails.collect {
+                updateUiState(it)
             }
         }
     }
 
-    private fun updateUiState(discoDetails: DiscoDetails) {
-        detailUiScren = detailUiScren.copy(discoDetails = discoDetails)
+    private fun updateUiState(details: DiscoDetails) {
+        discoDetailUiState = DetailUiState(details)
     }
 
 }
+
+data class DetailUiState(
+    val discoDetails: DiscoDetails = DiscoDetails(),
+)
